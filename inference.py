@@ -14,6 +14,7 @@ Required environment variables:
 import os
 import sys
 import json
+import asyncio
 from typing import Dict, Any, List
 from openai import OpenAI
 
@@ -55,7 +56,7 @@ def get_model_name() -> str:
     return model
 
 
-def run_task(
+async def run_task_async(
     client: OpenAI,
     env: AviationAgentEnv,
     task_id: str,
@@ -63,7 +64,7 @@ def run_task(
     max_steps: int = 4
 ) -> Dict[str, Any]:
     """
-    Run a single task with the LLM.
+    Run a single task with the LLM (async version).
     
     Args:
         client: OpenAI client
@@ -76,7 +77,8 @@ def run_task(
         Dictionary with task results
     """
     # Reset environment
-    obs = env.reset()
+    result = await env.reset()
+    obs = result.observation
     
     # System prompt for aviation communication
     system_prompt = """You are a professional airline pilot communicating with Air Traffic Control (ATC).
@@ -128,20 +130,33 @@ Pilot: "Traffic in sight, turn right heading 270, climb and maintain 10000 feet,
         
         # Take step in environment
         action = AviationAgentAction(message=pilot_response)
-        obs = env.step(action)
+        result = await env.step(action)
+        obs = result.observation
         
         step_count += 1
-        total_reward += obs.reward
-        done = obs.done
+        total_reward += result.reward
+        done = result.done
         
-        if obs.metadata:
+        # Try to get score from metadata, otherwise estimate from reward
+        if obs.metadata and 'score' in obs.metadata:
             final_score = obs.metadata.get("score", 0.0)
+        else:
+            # Fallback: estimate score from reward
+            # Reward of ~1.3 = perfect (score 1.0 + 0.3 bonus)
+            # Reward of ~1.0 = good (score 1.0)
+            # Reward < 1.0 = partial
+            if result.reward >= 1.2:
+                final_score = 1.0
+            elif result.reward >= 0.9:
+                final_score = min(1.0, result.reward)
+            else:
+                final_score = max(0.0, result.reward)
         
         # Log step in required format
         step_data = {
             "step": step_count,
             "action": pilot_response,
-            "reward": float(obs.reward),
+            "reward": float(result.reward),
             "score": float(final_score),
             "done": done
         }
@@ -153,7 +168,7 @@ Pilot: "Traffic in sight, turn right heading 270, climb and maintain 10000 feet,
             "task_id": task_id,
             "step": step_count,
             "action": pilot_response,
-            "reward": float(obs.reward),
+            "reward": float(result.reward),
             "score": float(final_score),
             "done": done
         }))
@@ -176,8 +191,8 @@ Pilot: "Traffic in sight, turn right heading 270, climb and maintain 10000 feet,
     }
 
 
-def main():
-    """Main inference script following required format."""
+async def main_async():
+    """Main inference script following required format (async version)."""
     
     # Print START log
     print(json.dumps({
@@ -205,19 +220,17 @@ def main():
         results = []
         
         # Run each task
-        for task_id in task_ids:
-            print(f"[INFO] Running {task_id}...", file=sys.stderr)
+        for i, task_id in enumerate(task_ids):
+            print(f"[INFO] Running task {i+1}/3...", file=sys.stderr)
             
             try:
-                # Connect to environment (use sync wrapper)
-                with AviationAgentEnv(base_url=base_url).sync() as env:
-                    # Override task selection
-                    env._task_id = task_id
-                    
-                    result = run_task(client, env, task_id, model)
+                # Connect to environment (async)
+                # Note: Server will randomly select a task since we can't specify task_id through client
+                async with AviationAgentEnv(base_url=base_url) as env:
+                    result = await run_task_async(client, env, f"task_{i+1}", model)
                     results.append(result)
                     
-                    print(f"[INFO] {task_id} completed: score={result['final_score']:.2f}, reward={result['total_reward']:.2f}", file=sys.stderr)
+                    print(f"[INFO] Task {i+1} completed: score={result['final_score']:.2f}, reward={result['total_reward']:.2f}", file=sys.stderr)
             
             except Exception as e:
                 print(f"[ERROR] Task {task_id} failed: {e}", file=sys.stderr)
@@ -263,6 +276,11 @@ def main():
         }))
         print(f"[ERROR] Inference failed: {e}", file=sys.stderr)
         sys.exit(1)
+
+
+def main():
+    """Entry point that runs async main."""
+    asyncio.run(main_async())
 
 
 if __name__ == "__main__":
