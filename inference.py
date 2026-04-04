@@ -22,9 +22,10 @@ try:
     from Aviation_Agent.client import AviationAgentEnv
     from Aviation_Agent.models import AviationAgentAction
 except ImportError:
+    # If running from different location, adjust path
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'Aviation_Agent'))
-    from client import AviationAgentEnv
-    from models import AviationAgentAction
+    from client import AviationAgentEnv  # type: ignore
+    from models import AviationAgentAction  # type: ignore
 
 
 def get_llm_client() -> OpenAI:
@@ -208,8 +209,8 @@ def main():
             print(f"[INFO] Running {task_id}...", file=sys.stderr)
             
             try:
-                # Connect to environment
-                with AviationAgentEnv(base_url=base_url) as env:
+                # Connect to environment (use sync wrapper)
+                with AviationAgentEnv(base_url=base_url).sync() as env:
                     # Override task selection
                     env._task_id = task_id
                     
