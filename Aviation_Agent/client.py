@@ -70,8 +70,9 @@ class AviationAgentEnv(
         """
         obs_data = payload.get("observation", {})
         observation = AviationAgentObservation(
-            echoed_message=obs_data.get("echoed_message", ""),
-            message_length=obs_data.get("message_length", 0),
+            atc_instruction=obs_data.get("atc_instruction", ""),
+            task_description=obs_data.get("task_description", ""),
+            step_count=obs_data.get("step_count", 0),
             done=payload.get("done", False),
             reward=payload.get("reward"),
             metadata=obs_data.get("metadata", {}),

@@ -7,7 +7,8 @@
 """
 Data models for the Aviation Agent Environment.
 
-The Aviation_Agent environment is a simple test environment that echoes back messages.
+The Aviation_Agent environment simulates Air Traffic Control (ATC) radio communication.
+Agents must respond correctly to ATC instructions with proper aviation phraseology.
 """
 
 from openenv.core.env_server.types import Action, Observation
@@ -15,13 +16,14 @@ from pydantic import Field
 
 
 class AviationAgentAction(Action):
-    """Action for the Aviation Agent environment - just a message to echo."""
+    """Action for the Aviation Agent environment - pilot radio response to ATC."""
 
-    message: str = Field(..., description="Message to echo back")
+    message: str = Field(..., description="Pilot's radio response to ATC instruction")
 
 
 class AviationAgentObservation(Observation):
-    """Observation from the Aviation Agent environment - the echoed message."""
+    """Observation from the Aviation Agent environment - ATC instruction and feedback."""
 
-    echoed_message: str = Field(default="", description="The echoed message")
-    message_length: int = Field(default=0, description="Length of the echoed message")
+    atc_instruction: str = Field(default="", description="The ATC instruction given to the pilot")
+    task_description: str = Field(default="", description="Description of what the pilot should do")
+    step_count: int = Field(default=0, description="Number of steps taken in this episode")

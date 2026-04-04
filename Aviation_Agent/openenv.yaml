@@ -4,4 +4,15 @@ type: space
 runtime: fastapi
 app: server.app:app
 port: 8000
+description: "Air Traffic Control radio communication environment. Agents respond to ATC instructions using proper aviation phraseology."
+tags:
+  - aviation
+  - atc
+  - communication
+  - real-world-task
+difficulty_levels:
+  - easy
+  - medium
+  - hard
+num_tasks: 3
 

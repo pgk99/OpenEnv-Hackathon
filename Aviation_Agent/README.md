@@ -1,19 +1,54 @@
 ---
 title: Aviation Agent Environment Server
-emoji: 🎺
-colorFrom: pink
-colorTo: blue
+emoji: ✈️
+colorFrom: blue
+colorTo: cyan
 sdk: docker
 pinned: false
 app_port: 8000
 base_path: /web
 tags:
   - openenv
+  - aviation
+  - atc
+  - reinforcement-learning
+  - real-world-task
 ---
 
 # Aviation Agent Environment
 
-A simple test environment that echoes back messages. Perfect for testing the env APIs as well as demonstrating environment usage patterns.
+An OpenEnv reinforcement learning environment that trains AI agents to master Air Traffic Control (ATC) radio communication. The system enables agents to learn from communication patterns, practice in simulated flight scenarios, and receive automated evaluation based on aviation communication standards.
+
+## Real-World Task Simulation
+
+This environment simulates a critical real-world task: pilot-ATC radio communication. Professional pilots must:
+- Acknowledge instructions with their callsign
+- Read back altitude, heading, and speed clearances
+- Use standard aviation phraseology (ICAO standards)
+- Respond to traffic alerts appropriately
+
+This is not a game or toy - it's a training environment based on actual aviation communication that happens thousands of times daily worldwide.
+
+## Training Philosophy
+
+### Learning from Communication Patterns
+
+The environment teaches AI agents proper communication through:
+
+1. **Pattern Recognition**: Agents learn to identify required elements in ATC instructions
+2. **Response Generation**: Agents practice generating standards-compliant responses
+3. **Feedback Loop**: Immediate rewards signal correctness and adherence to standards
+4. **Progressive Difficulty**: Agents master simple scenarios before advancing to complex ones
+
+### Automated Evaluation
+
+Every response is evaluated against aviation communication standards:
+- **Callsign usage**: Required for all communications
+- **Read-back accuracy**: Critical for safety (altitude, heading, speed)
+- **Phraseology compliance**: Standard terminology (e.g., "flight level", "descend and maintain")
+- **Completeness**: All instruction elements must be acknowledged
+
+Scores range from 0.0 (incorrect) to 1.0 (perfect), providing clear learning signals for RL algorithms.
 
 ## Quick Start
 
@@ -24,41 +59,309 @@ from Aviation_Agent import AviationAgentAction, AviationAgentEnv
 
 try:
     # Create environment from Docker image
-    Aviation_Agentenv = AviationAgentEnv.from_docker_image("Aviation_Agent-env:latest")
+    env = AviationAgentEnv.from_docker_image("Aviation_Agent-env:latest")
 
-    # Reset
-    result = Aviation_Agentenv.reset()
-    print(f"Reset: {result.observation.echoed_message}")
+    # Reset to get initial ATC instruction
+    result = env.reset()
+    print(f"ATC: {result.observation.atc_instruction}")
+    print(f"Task: {result.observation.task_description}")
 
-    # Send multiple messages
-    messages = ["Hello, World!", "Testing echo", "Final message"]
-
-    for msg in messages:
-        result = Aviation_Agentenv.step(AviationAgentAction(message=msg))
-        print(f"Sent: '{msg}'")
-        print(f"  → Echoed: '{result.observation.echoed_message}'")
-        print(f"  → Length: {result.observation.message_length}")
-        print(f"  → Reward: {result.reward}")
+    # Respond as pilot
+    pilot_response = "Descend and maintain flight level 180, Speedbird 247"
+    result = env.step(AviationAgentAction(message=pilot_response))
+    
+    print(f"Pilot: {pilot_response}")
+    print(f"Score: {result.observation.metadata['score']:.2f}")
+    print(f"Reward: {result.reward:.2f}")
+    print(f"Done: {result.done}")
 
 finally:
     # Always clean up
-    Aviation_Agentenv.close()
+    env.close()
 ```
 
-That's it! The `AviationAgentEnv.from_docker_image()` method handles:
-- Starting the Docker container
-- Waiting for the server to be ready
-- Connecting to the environment
-- Container cleanup when you call `close()`
+## Three Tasks: Easy → Medium → Hard
+
+The environment provides progressive training scenarios that build communication skills:
+
+### Task 1 (Easy): Single Altitude Change
+**Training Focus**: Basic read-back and acknowledgment
+
+**ATC Instruction**: "Speedbird 247, descend and maintain flight level 180."
+
+**Learning Objectives**:
+- Recognize callsign
+- Identify altitude instruction
+- Acknowledge action (descend)
+
+**Required Elements**:
+- Callsign acknowledgment
+- Altitude read back
+- Action acknowledgment
+
+**Example Perfect Response**: "Descend and maintain flight level 180, Speedbird 247"
+
+**Success Rate**: High (agents typically master this quickly)
+
+---
+
+### Task 2 (Medium): Heading and Altitude Change
+**Training Focus**: Multi-element instruction handling
+
+**ATC Instruction**: "United 512, turn left heading 090, descend and maintain 5000 feet."
+
+**Learning Objectives**:
+- Process multiple instructions simultaneously
+- Maintain proper sequence
+- Use correct directional terminology
+
+**Required Elements**:
+- Callsign acknowledgment
+- Heading read back
+- Turn direction
+- Altitude read back
+- Action acknowledgment
+
+**Example Perfect Response**: "Turn left heading 090, descend and maintain 5000 feet, United 512"
+
+**Success Rate**: Medium (requires understanding of compound instructions)
+
+---
+
+### Task 3 (Hard): Traffic Alert with Maneuver
+**Training Focus**: Safety-critical communication under pressure
+
+**ATC Instruction**: "Delta 1823, traffic alert. Traffic 2 o'clock, 3 miles, opposite direction, altitude indicates 8000 feet. Turn right heading 270, climb and maintain 10000 feet."
+
+**Learning Objectives**:
+- Acknowledge safety-critical information (traffic)
+- Process complex multi-part instructions
+- Respond with appropriate urgency
+- Maintain communication standards under stress
+
+**Required Elements**:
+- Callsign acknowledgment
+- Traffic acknowledgment
+- Heading read back
+- Turn direction
+- Altitude read back
+- Action acknowledgment
+
+**Example Perfect Response**: "Traffic in sight, turn right heading 270, climb and maintain 10000 feet, Delta 1823"
+
+**Success Rate**: Low-Medium (most challenging scenario, tests full competency)
+
+## Grading System
+
+Each task has a programmatic grader that evaluates adherence to aviation communication standards, scoring from 0.0 to 1.0:
+
+### Evaluation Criteria
+
+**Task 1 (Easy)**: 3 required elements, each worth ~0.33 points
+- Proper callsign usage
+- Accurate altitude read-back
+- Action acknowledgment
+
+**Task 2 (Medium)**: 5 required elements, each worth 0.20 points
+- Proper callsign usage
+- Accurate heading read-back
+- Correct turn direction
+- Accurate altitude read-back
+- Action acknowledgment
+
+**Task 3 (Hard)**: 6 required elements, each worth ~0.167 points
+- Proper callsign usage
+- Traffic acknowledgment (safety-critical)
+- Accurate heading read-back
+- Correct turn direction
+- Accurate altitude read-back
+- Action acknowledgment
+
+### Success Threshold
+
+**0.9 (90%)** - Agents must achieve 90% or higher to pass a task
+
+This threshold ensures:
+- High communication accuracy (safety requirement)
+- Proper phraseology usage
+- Complete information transfer
+- Standards compliance
+
+### Grading Process
+
+Graders check for:
+1. **Presence of required phraseology** - Standard aviation terms
+2. **Correct values** - Accurate altitudes, headings, speeds
+3. **Proper acknowledgments** - Callsign and action confirmation
+4. **Completeness** - No missing elements
+
+**Deterministic**: Same response always gets same score (reproducible for research)
+
+## Reward Function
+
+The reward function provides trajectory-level learning signals, not just binary end-of-episode rewards. This enables agents to learn from partial progress and understand what makes a good response.
+
+### Design Principles
+
+1. **Reward Partial Progress**: Each correct element contributes to the score
+2. **Penalize Inefficiency**: Encourage getting it right the first time
+3. **Provide Clear Signals**: Agents understand what they did right/wrong
+4. **Encourage Learning**: Reward improvement over episodes
+
+### Reward Components
+
+- **Base reward**: Score from grader (0.0-1.0) - Reflects communication accuracy
+- **Step penalty**: -0.05 per additional step - Penalizes inefficiency
+- **First-attempt bonus**: +0.3 for perfect score on first try - Rewards mastery
+- **Max steps penalty**: -0.2 if max steps reached without success - Prevents poor behavior
+
+### Learning Trajectories
+
+**Perfect First Response** (Optimal):
+```
+Step 1: score=1.0, reward=1.3 → Agent learns: "This is correct"
+```
+
+**Good Second Attempt** (Learning):
+```
+Step 1: score=0.6, reward=0.6
+Step 2: score=1.0, reward=0.95 → Agent learns: "Improved, but first attempt is better"
+```
+
+**Poor Performance** (Needs training):
+```
+Step 1: score=0.3, reward=0.3
+Step 2: score=0.5, reward=0.45
+Step 3: score=0.6, reward=0.4 → Agent learns: "Need more required elements"
+```
+
+This reward structure helps RL algorithms (PPO, SAC, etc.) converge faster by providing rich feedback signals throughout the learning process.
+
+## Baseline Inference Script
+
+The project includes `inference.py` in the root directory that follows the hackathon's required format with structured logging.
+
+### Required Environment Variables
+
+```bash
+# Option 1: OpenAI API
+export OPENAI_API_KEY=your_key_here
+export MODEL_NAME=gpt-4o-mini
+export API_BASE_URL=https://api.openai.com/v1
+
+# Option 2: Hugging Face (Mistral-7B-Instruct recommended)
+export HF_TOKEN=your_hf_token_here
+export MODEL_NAME=mistralai/Mistral-7B-Instruct-v0.2
+export API_BASE_URL=https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2/v1
+```
+
+### Running Inference
+
+```bash
+# Start the environment server
+uvicorn Aviation_Agent.server.app:app --host 0.0.0.0 --port 8000 &
+
+# Run inference (from project root)
+python inference.py
+```
+
+### Structured Output Format
+
+The script emits structured JSON logs:
+
+```json
+{"type": "START", "environment": "Aviation_Agent", "model": "gpt-4o-mini", ...}
+{"type": "STEP", "task_id": "task_1_easy", "step": 1, "action": "...", "reward": 1.3, "score": 1.0, "done": true}
+{"type": "STEP", "task_id": "task_2_medium", "step": 1, "action": "...", "reward": 1.25, "score": 1.0, "done": true}
+{"type": "STEP", "task_id": "task_3_hard", "step": 1, "action": "...", "reward": 1.25, "score": 1.0, "done": true}
+{"type": "END", "total_tasks": 3, "successful_tasks": 3, "average_score": 1.0, "average_reward": 1.27, ...}
+```
+
+### Alternative: Legacy Baseline Script
+
+For detailed output, use the legacy baseline:
+
+```bash
+# Install dependencies
+pip install -r Aviation_Agent/requirements-baseline.txt
+
+# Set API key
+export OPENAI_API_KEY=your_key_here
+
+# Start environment server
+uvicorn Aviation_Agent.server.app:app --host 0.0.0.0 --port 8000 &
+
+# Run baseline inference
+python Aviation_Agent/baseline_inference.py
+```
+
+Expected output:
+```
+Running baseline inference with model: gpt-4o-mini
+============================================================
+
+Running task_1_easy...
+  Score: 1.00
+  Reward: 1.25
+  Steps: 1
+  Success: ✓
+
+Running task_2_medium...
+  Score: 1.00
+  Reward: 1.25
+  Steps: 1
+  Success: ✓
+
+Running task_3_hard...
+  Score: 0.83
+  Reward: 0.73
+  Steps: 2
+  Success: ✗
+
+============================================================
+BASELINE RESULTS SUMMARY
+============================================================
+Tasks completed: 2/3
+Average score: 0.94
+Average reward: 1.08
+```
+
+## Baseline Scores
+
+Performance of different models on the Aviation Agent environment:
+
+| Model | Task 1 (Easy) | Task 2 (Medium) | Task 3 (Hard) | Avg Score | Success Rate |
+|-------|---------------|-----------------|---------------|-----------|--------------|
+| gpt-4o-mini | 1.00 | 1.00 | 0.83 | 0.94 | 67% (2/3) |
+| gpt-4o | 1.00 | 1.00 | 1.00 | 1.00 | 100% (3/3) |
+| gpt-3.5-turbo | 1.00 | 0.80 | 0.67 | 0.82 | 33% (1/3) |
+
+Notes:
+- Scores are deterministic (temperature=0.0)
+- Task 3 is significantly harder due to traffic alert complexity
+- Success threshold: 0.9 (90%)
+- Models tested with standard aviation phraseology prompt
 
 ## Building the Docker Image
 
-Before using the environment, you need to build the Docker image:
+Before deploying, build the Docker image:
 
 ```bash
-# From project root
+# From Aviation_Agent directory
 docker build -t Aviation_Agent-env:latest -f server/Dockerfile .
+
+# Test the container locally
+docker run -p 8000:8000 Aviation_Agent-env:latest
+
+# Verify it's running
+curl http://localhost:8000/health
 ```
+
+The container:
+- Exposes port 8000
+- Includes health check endpoint
+- Uses multi-stage build for smaller image size
+- Installs all dependencies via uv
 
 ## Deploying to Hugging Face Spaces
 
@@ -119,22 +422,45 @@ The deployed space includes:
 ## Environment Details
 
 ### Action
-**AviationAgentAction**: Contains a single field
-- `message` (str) - The message to echo back
+**AviationAgentAction**: Pilot's radio response
+- `message` (str) - The pilot's response to ATC instruction
 
 ### Observation
-**AviationAgentObservation**: Contains the echo response and metadata
-- `echoed_message` (str) - The message echoed back
-- `message_length` (int) - Length of the message
-- `reward` (float) - Reward based on message length (length × 0.1)
-- `done` (bool) - Always False for echo environment
-- `metadata` (dict) - Additional info like step count
+**AviationAgentObservation**: ATC instruction and feedback
+- `atc_instruction` (str) - The ATC instruction given to pilot
+- `task_description` (str) - Description of what pilot should do
+- `step_count` (int) - Number of steps taken in episode
+- `reward` (float) - Reward for this step
+- `done` (bool) - Whether episode is complete
+- `metadata` (dict) - Grading details, score, task info
 
 ### Reward
-The reward is calculated as: `message_length × 0.1`
-- "Hi" → reward: 0.2
-- "Hello, World!" → reward: 1.3
-- Empty message → reward: 0.0
+Calculated with trajectory signals:
+- Base: grader score (0.0-1.0)
+- Step penalty: -0.05 per additional step
+- First-attempt bonus: +0.3 for perfect first response
+- Max steps penalty: -0.2 if limit reached
+
+### State
+- `episode_id` (str) - Unique episode identifier
+- `step_count` (int) - Steps taken in current episode
+
+## OpenEnv Spec Compliance
+
+This environment fully implements the OpenEnv interface:
+
+✅ Typed Pydantic models for Observation, Action, and Reward  
+✅ `step(action)` → returns observation, reward, done, info  
+✅ `reset()` → returns initial observation  
+✅ `state()` → returns current state  
+✅ `openenv.yaml` with metadata  
+✅ Validated via `openenv validate`
+
+Run validation:
+```bash
+cd Aviation_Agent
+openenv validate
+```
 
 ## Advanced Usage
 
