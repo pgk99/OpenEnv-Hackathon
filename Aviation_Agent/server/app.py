@@ -36,9 +36,13 @@ except Exception as e:  # pragma: no cover
     ) from e
 
 try:
-    from ..models import AviationAgentAction, AviationAgentObservation
-    from .Aviation_Agent_environment import AviationAgentEnvironment
+    from models import AviationAgentAction, AviationAgentObservation
+    from server.Aviation_Agent_environment import AviationAgentEnvironment
 except ModuleNotFoundError:
+    # Fallback for different import contexts
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     from models import AviationAgentAction, AviationAgentObservation
     from server.Aviation_Agent_environment import AviationAgentEnvironment
 
