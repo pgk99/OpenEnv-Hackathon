@@ -2,7 +2,7 @@
 title: Aviation Agent Environment Server
 emoji: ✈️
 colorFrom: blue
-colorTo: cyan
+colorTo: purple
 sdk: docker
 pinned: false
 app_port: 8000
