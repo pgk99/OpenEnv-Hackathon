@@ -7,6 +7,7 @@
 """Aviation Agent environment server components."""
 
 from .Aviation_Agent_environment import AviationAgentEnvironment
+from .app import app, main
 
-__all__ = ["AviationAgentEnvironment"]
+__all__ = ["AviationAgentEnvironment", "app", "main"]
 
