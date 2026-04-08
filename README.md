@@ -2,6 +2,8 @@
 
 An Agentic AI system that learns from ATC-pilot communication patterns and enables AI agents (and trainee pilots) to practice, interpret, and generate accurate responses in simulated flight scenarios with automated evaluation of correctness and adherence to aviation communication standards.
 
+We model ATC communication as a sequential decision-making problem using OpenEnv, where an agent learns optimal aviation phraseology through interaction and graded feedback.
+
 **Meta x Hugging Face OpenEnv Hackathon Submission**
 
 ## Quick Start
@@ -45,6 +47,10 @@ python inference.py
 ## Environment Description
 
 A reinforcement learning environment that simulates Air Traffic Control (ATC) radio communication, designed to train AI agents to master aviation communication standards.
+
+## Architecture workflow
+
+ATC → Environment → Agent → Response → Grader → Reward → Learning
 
 ### Training Objectives
 
@@ -98,6 +104,10 @@ A reinforcement learning environment that simulates Air Traffic Control (ATC) ra
 ✅ **OpenEnv spec compliance** - Full implementation with typed models  
 ✅ **Docker containerization** - Production-ready deployment  
 ✅ **Complete documentation** - Comprehensive guides and examples  
+
+## Future Enhancements
+
+Future work includes integrating real ATC datasets and fine-tuning domain-specific LLMs for aviation communication
 
 ## Testing
 
