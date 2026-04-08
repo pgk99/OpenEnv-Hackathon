@@ -24,24 +24,7 @@ class AviationAgentEnv(
     This client maintains a persistent WebSocket connection to the environment server,
     enabling efficient multi-step interactions with lower latency.
     Each client instance has its own dedicated environment session on the server.
-
-    Example:
-        >>> # Connect to a running server
-        >>> with AviationAgentEnv(base_url="http://localhost:8000") as client:
-        ...     result = client.reset()
-        ...     print(result.observation.echoed_message)
-        ...
-        ...     result = client.step(AviationAgentAction(message="Hello!"))
-        ...     print(result.observation.echoed_message)
-
-    Example with Docker:
-        >>> # Automatically start container and connect
-        >>> client = AviationAgentEnv.from_docker_image("Aviation_Agent-env:latest")
-        >>> try:
-        ...     result = client.reset()
-        ...     result = client.step(AviationAgentAction(message="Test"))
-        ... finally:
-        ...     client.close()
+    
     """
 
     def _step_payload(self, action: AviationAgentAction) -> Dict:

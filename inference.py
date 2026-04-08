@@ -51,7 +51,7 @@ def get_llm_client() -> OpenAI:
 
 
 def get_model_name() -> str:
-    """Get model name from environment variable."""
+    # Get model name from environment variable
     model = os.getenv("MODEL_NAME", "gpt-4o-mini")
     return model
 
@@ -66,15 +66,6 @@ async def run_task_async(
     """
     Run a single task with the LLM (async version).
     
-    Args:
-        client: OpenAI client
-        env: Aviation environment
-        task_id: Task identifier
-        model: Model name
-        max_steps: Maximum steps per episode
-        
-    Returns:
-        Dictionary with task results
     """
     # Reset environment
     result = await env.reset()
@@ -192,7 +183,7 @@ Pilot: "Traffic in sight, turn right heading 270, climb and maintain 10000 feet,
 
 
 async def main_async():
-    """Main inference script following required format (async version)."""
+    # Main inference script following required format (async version).
     
     # Print START log
     print(json.dumps({

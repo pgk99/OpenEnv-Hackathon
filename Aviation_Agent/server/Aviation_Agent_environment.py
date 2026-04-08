@@ -3,7 +3,7 @@
 #
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
-
+                 
 from uuid import uuid4
 import random
 import re
@@ -90,7 +90,7 @@ class AviationAgentEnvironment(Environment):
         self._max_steps_reached = False
 
     def reset(self) -> AviationAgentObservation:
-        """Reset environment and select a task."""
+        # Reset environment and select a task
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._response_history = []
         self._max_steps_reached = False
@@ -110,7 +110,7 @@ class AviationAgentEnvironment(Environment):
         )
 
     def step(self, action: AviationAgentAction) -> AviationAgentObservation:
-        """Execute one step in the environment."""
+        # Execute one step in the environment
         self._state.step_count += 1
         response = action.message.strip()
         self._response_history.append(response)

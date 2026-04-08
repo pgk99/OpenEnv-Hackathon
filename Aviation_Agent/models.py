@@ -16,13 +16,13 @@ from pydantic import Field
 
 
 class AviationAgentAction(Action):
-    """Action for the Aviation Agent environment - pilot radio response to ATC."""
+    # Action for the Aviation Agent environment - pilot radio response to ATC
 
     message: str = Field(..., description="Pilot's radio response to ATC instruction")
 
 
 class AviationAgentObservation(Observation):
-    """Observation from the Aviation Agent environment - ATC instruction and feedback."""
+    # Observation from the Aviation Agent environment - ATC instruction and feedback
 
     atc_instruction: str = Field(default="", description="The ATC instruction given to the pilot")
     task_description: str = Field(default="", description="Description of what the pilot should do")
